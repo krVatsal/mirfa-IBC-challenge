@@ -99,6 +99,26 @@ Encrypts and stores a transaction.
 }
 ```
 
+#### `GET /tx`
+
+Returns a list of all stored transactions (metadata only, limited to 100).
+
+**Response:**
+```json
+{
+  "count": 5,
+  "transactions": [
+    {
+      "id": "...",
+      "partyId": "party_123",
+      "createdAt": "...",
+      "alg": "AES-256-GCM",
+      "mk_version": 1
+    }
+  ]
+}
+```
+
 #### `GET /tx/:id`
 
 Returns the stored encrypted record (no decryption).
@@ -219,10 +239,17 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 
 ### Storage
 
-Currently using in-memory `Map` for storage. For production, consider:
-- SQLite
-- PostgreSQL
-- Redis
+Using **SQLite** (via sql.js) for persistent storage:
+- Database file: `apps/api/data/transactions.db`
+- Auto-saves every 30 seconds
+- Persists across server restarts
+- Pure JavaScript implementation (no native dependencies)
+- Indexed by `partyId` and `createdAt` for efficient queries
+
+To change the database location:
+```bash
+export DB_PATH=/path/to/custom/transactions.db
+```
 
 ### Master Key Management
 
@@ -250,13 +277,13 @@ MIT
 
 This project fulfills all requirements:
 - ✅ TurboRepo monorepo structure
-- ✅ Fastify backend with 3 endpoints
+- ✅ Fastify backend with 4 endpoints
 - ✅ Next.js frontend with encryption UI
 - ✅ Envelope encryption with AES-256-GCM
 - ✅ Proper validation rules
 - ✅ TypeScript throughout
 - ✅ Runs with `pnpm install && pnpm dev`
-- ✅ In-memory storage
+- ✅ **SQLite persistent storage** (bonus)
 - ✅ Clean, modern UI
 - ✅ Full error handling
 

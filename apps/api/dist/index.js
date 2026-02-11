@@ -6,18 +6,44 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fastify_1 = __importDefault(require("fastify"));
 const cors_1 = __importDefault(require("@fastify/cors"));
 const crypto_1 = require("@mirfa/crypto");
+const database_1 = require("./database");
 const fastify = (0, fastify_1.default)({
     logger: true,
 });
-// In-memory storage
-const storage = new Map();
 // Enable CORS for frontend
 fastify.register(cors_1.default, {
     origin: true, // Allow all origins in development
 });
 // Health check
 fastify.get("/", async () => {
-    return { status: "ok", service: "mirfa-ibc-api" };
+    return {
+        status: "ok",
+        service: "mirfa-ibc-api",
+        storage: "SQLite",
+        encryption: "AES-256-GCM Envelope Encryption"
+    };
+});
+// GET /tx - List all transactions (limited)
+fastify.get("/tx", async (request, reply) => {
+    try {
+        const transactions = await (0, database_1.getAllTransactions)(100);
+        return reply.send({
+            count: transactions.length,
+            transactions: transactions.map((tx) => ({
+                id: tx.id,
+                partyId: tx.partyId,
+                createdAt: tx.createdAt,
+                alg: tx.alg,
+                mk_version: tx.mk_version,
+            })),
+        });
+    }
+    catch (error) {
+        fastify.log.error(error);
+        return reply.code(500).send({
+            error: "Failed to retrieve transactions",
+        });
+    }
 });
 // POST /tx/encrypt - Encrypt and store transaction
 fastify.post("/tx/encrypt", async (request, reply) => {
@@ -36,8 +62,8 @@ fastify.post("/tx/encrypt", async (request, reply) => {
         }
         // Encrypt transaction
         const record = (0, crypto_1.encryptTransaction)({ partyId, payload });
-        // Store encrypted record
-        storage.set(record.id, record);
+        // Store encrypted record in SQLite
+        await (0, database_1.storeTransaction)(record);
         return reply.code(201).send({
             id: record.id,
             partyId: record.partyId,
@@ -57,7 +83,7 @@ fastify.post("/tx/encrypt", async (request, reply) => {
 // GET /tx/:id - Get encrypted record (no decrypt)
 fastify.get("/tx/:id", async (request, reply) => {
     const { id } = request.params;
-    const record = storage.get(id);
+    const record = await (0, database_1.getTransaction)(id);
     if (!record) {
         return reply.code(404).send({
             error: "Transaction not found",
@@ -69,7 +95,7 @@ fastify.get("/tx/:id", async (request, reply) => {
 fastify.post("/tx/:id/decrypt", async (request, reply) => {
     try {
         const { id } = request.params;
-        const record = storage.get(id);
+        const record = await (0, database_1.getTransaction)(id);
         if (!record) {
             return reply.code(404).send({
                 error: "Transaction not found",

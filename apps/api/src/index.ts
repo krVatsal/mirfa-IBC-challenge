@@ -9,13 +9,15 @@ import {
   ValidationError,
   DecryptionError,
 } from "@mirfa/crypto";
+import {
+  storeTransaction,
+  getTransaction,
+  getAllTransactions,
+} from "./database";
 
 const fastify = Fastify({
   logger: true,
 });
-
-// In-memory storage
-const storage = new Map<string, TxSecureRecord>();
 
 // Enable CORS for frontend
 fastify.register(cors, {
@@ -24,7 +26,34 @@ fastify.register(cors, {
 
 // Health check
 fastify.get("/", async () => {
-  return { status: "ok", service: "mirfa-ibc-api" };
+  return { 
+    status: "ok", 
+    service: "mirfa-ibc-api",
+    storage: "SQLite",
+    encryption: "AES-256-GCM Envelope Encryption"
+  };
+});
+
+// GET /tx - List all transactions (limited)
+fastify.get("/tx", async (request, reply) => {
+  try {
+    const transactions = await getAllTransactions(100);
+    return reply.send({
+      count: transactions.length,
+      transactions: transactions.map((tx) => ({
+        id: tx.id,
+        partyId: tx.partyId,
+        createdAt: tx.createdAt,
+        alg: tx.alg,
+        mk_version: tx.mk_version,
+      })),
+    });
+  } catch (error) {
+    fastify.log.error(error);
+    return reply.code(500).send({
+      error: "Failed to retrieve transactions",
+    });
+  }
 });
 
 // POST /tx/encrypt - Encrypt and store transaction
@@ -50,8 +79,8 @@ fastify.post<{
     // Encrypt transaction
     const record = encryptTransaction({ partyId, payload });
 
-    // Store encrypted record
-    storage.set(record.id, record);
+    // Store encrypted record in SQLite
+    await storeTransaction(record);
 
     return reply.code(201).send({
       id: record.id,
@@ -75,7 +104,7 @@ fastify.get<{
 }>("/tx/:id", async (request, reply) => {
   const { id } = request.params;
 
-  const record = storage.get(id);
+  const record = await getTransaction(id);
 
   if (!record) {
     return reply.code(404).send({
@@ -93,7 +122,7 @@ fastify.post<{
   try {
     const { id } = request.params;
 
-    const record = storage.get(id);
+    const record = await getTransaction(id);
 
     if (!record) {
       return reply.code(404).send({

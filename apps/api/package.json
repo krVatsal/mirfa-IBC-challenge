@@ -10,10 +10,12 @@
   "dependencies": {
     "@mirfa/crypto": "workspace:*",
     "@fastify/cors": "^10.0.1",
-    "fastify": "^5.7.4"
+    "fastify": "^5.7.4",
+    "sql.js": "^1.12.0"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/sql.js": "^1.4.9",
     "tsx": "^4.19.2",
     "typescript": "^5"
   }
