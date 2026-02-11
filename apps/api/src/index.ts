@@ -21,7 +21,10 @@ const fastify = Fastify({
 
 // Enable CORS for frontend
 fastify.register(cors, {
-  origin: true, // Allow all origins in development
+  origin: process.env.CORS_ORIGIN || true, // Allow all origins or specify in env
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 });
 
 // Health check
