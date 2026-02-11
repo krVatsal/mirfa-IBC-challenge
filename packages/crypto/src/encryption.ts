@@ -9,7 +9,15 @@ import {
   DecryptionError,
 } from "./types";
 
-const KEY_FILE = process.env.MASTER_KEY_FILE || join(process.cwd(), "data", ".master.key");
+// Detect serverless environment (Vercel, AWS Lambda, etc.)
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT;
+
+// Use /tmp in serverless environments (ephemeral), otherwise use data/ directory
+const defaultKeyPath = isServerless 
+  ? join("/tmp", ".master.key")
+  : join(process.cwd(), "data", ".master.key");
+
+const KEY_FILE = process.env.MASTER_KEY_FILE || defaultKeyPath;
 
 /**
  * Get or generate master key
@@ -32,6 +40,14 @@ function getMasterKey(): Buffer {
 
   // 3. Generate new key and save it
   console.log(`🔑 Generating new Master Key and saving to ${KEY_FILE}`);
+  
+  if (isServerless) {
+    console.warn("⚠️  WARNING: Running in serverless environment without MASTER_KEY env var!");
+    console.warn("⚠️  The key will be stored in /tmp and LOST between invocations.");
+    console.warn("⚠️  Set MASTER_KEY environment variable in Vercel/AWS to persist the key.");
+    console.warn("⚠️  Example: MASTER_KEY=" + randomBytes(32).toString("hex"));
+  }
+  
   const newKey = randomBytes(32);
   const keyHex = newKey.toString("hex");
   

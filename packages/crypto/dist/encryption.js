@@ -7,7 +7,13 @@ const crypto_1 = require("crypto");
 const fs_1 = require("fs");
 const path_1 = require("path");
 const types_1 = require("./types");
-const KEY_FILE = process.env.MASTER_KEY_FILE || (0, path_1.join)(process.cwd(), "data", ".master.key");
+// Detect serverless environment (Vercel, AWS Lambda, etc.)
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT;
+// Use /tmp in serverless environments (ephemeral), otherwise use data/ directory
+const defaultKeyPath = isServerless
+    ? (0, path_1.join)("/tmp", ".master.key")
+    : (0, path_1.join)(process.cwd(), "data", ".master.key");
+const KEY_FILE = process.env.MASTER_KEY_FILE || defaultKeyPath;
 /**
  * Get or generate master key
  * Master Key for wrapping DEKs
@@ -27,6 +33,12 @@ function getMasterKey() {
     }
     // 3. Generate new key and save it
     console.log(`🔑 Generating new Master Key and saving to ${KEY_FILE}`);
+    if (isServerless) {
+        console.warn("⚠️  WARNING: Running in serverless environment without MASTER_KEY env var!");
+        console.warn("⚠️  The key will be stored in /tmp and LOST between invocations.");
+        console.warn("⚠️  Set MASTER_KEY environment variable in Vercel/AWS to persist the key.");
+        console.warn("⚠️  Example: MASTER_KEY=" + (0, crypto_1.randomBytes)(32).toString("hex"));
+    }
     const newKey = (0, crypto_1.randomBytes)(32);
     const keyHex = newKey.toString("hex");
     // Ensure directory exists
