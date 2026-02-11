@@ -4,14 +4,41 @@ exports.encryptTransaction = encryptTransaction;
 exports.decryptTransaction = decryptTransaction;
 exports.validateRecord = validateRecord;
 const crypto_1 = require("crypto");
+const fs_1 = require("fs");
+const path_1 = require("path");
 const types_1 = require("./types");
+const KEY_FILE = process.env.MASTER_KEY_FILE || (0, path_1.join)(process.cwd(), "data", ".master.key");
 /**
+ * Get or generate master key
  * Master Key for wrapping DEKs
  * In production, this should be stored in a secure key management service (KMS)
  */
-const MASTER_KEY = process.env.MASTER_KEY
-    ? Buffer.from(process.env.MASTER_KEY, "hex")
-    : (0, crypto_1.randomBytes)(32); // 256 bits
+function getMasterKey() {
+    // 1. Check environment variable first
+    if (process.env.MASTER_KEY) {
+        console.log("🔑 Using MASTER_KEY from environment variable");
+        return Buffer.from(process.env.MASTER_KEY, "hex");
+    }
+    // 2. Check if key file exists
+    if ((0, fs_1.existsSync)(KEY_FILE)) {
+        console.log(`🔑 Loaded Master Key from ${KEY_FILE}`);
+        const keyHex = (0, fs_1.readFileSync)(KEY_FILE, "utf-8").trim();
+        return Buffer.from(keyHex, "hex");
+    }
+    // 3. Generate new key and save it
+    console.log(`🔑 Generating new Master Key and saving to ${KEY_FILE}`);
+    const newKey = (0, crypto_1.randomBytes)(32);
+    const keyHex = newKey.toString("hex");
+    // Ensure directory exists
+    const keyDir = (0, path_1.dirname)(KEY_FILE);
+    if (!(0, fs_1.existsSync)(keyDir)) {
+        (0, fs_1.mkdirSync)(keyDir, { recursive: true });
+    }
+    (0, fs_1.writeFileSync)(KEY_FILE, keyHex, "utf-8");
+    console.log("⚠️  Master Key saved. Keep this file secure and backed up!");
+    return newKey;
+}
+const MASTER_KEY = getMasterKey();
 const ALGORITHM = "aes-256-gcm";
 const NONCE_LENGTH = 12; // 96 bits for GCM
 const TAG_LENGTH = 16; // 128 bits authentication tag

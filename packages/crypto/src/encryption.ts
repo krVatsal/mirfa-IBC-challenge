@@ -1,4 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { join, dirname } from "path";
 import {
   TxSecureRecord,
   EncryptRequest,
@@ -7,13 +9,45 @@ import {
   DecryptionError,
 } from "./types";
 
+const KEY_FILE = process.env.MASTER_KEY_FILE || join(process.cwd(), "data", ".master.key");
+
 /**
+ * Get or generate master key
  * Master Key for wrapping DEKs
  * In production, this should be stored in a secure key management service (KMS)
  */
-const MASTER_KEY = process.env.MASTER_KEY
-  ? Buffer.from(process.env.MASTER_KEY, "hex")
-  : randomBytes(32); // 256 bits
+function getMasterKey(): Buffer {
+  // 1. Check environment variable first
+  if (process.env.MASTER_KEY) {
+    console.log("🔑 Using MASTER_KEY from environment variable");
+    return Buffer.from(process.env.MASTER_KEY, "hex");
+  }
+
+  // 2. Check if key file exists
+  if (existsSync(KEY_FILE)) {
+    console.log(`🔑 Loaded Master Key from ${KEY_FILE}`);
+    const keyHex = readFileSync(KEY_FILE, "utf-8").trim();
+    return Buffer.from(keyHex, "hex");
+  }
+
+  // 3. Generate new key and save it
+  console.log(`🔑 Generating new Master Key and saving to ${KEY_FILE}`);
+  const newKey = randomBytes(32);
+  const keyHex = newKey.toString("hex");
+  
+  // Ensure directory exists
+  const keyDir = dirname(KEY_FILE);
+  if (!existsSync(keyDir)) {
+    mkdirSync(keyDir, { recursive: true });
+  }
+  
+  writeFileSync(KEY_FILE, keyHex, "utf-8");
+  console.log("⚠️  Master Key saved. Keep this file secure and backed up!");
+  
+  return newKey;
+}
+
+const MASTER_KEY = getMasterKey();
 
 const ALGORITHM = "aes-256-gcm";
 const NONCE_LENGTH = 12; // 96 bits for GCM

@@ -1,1 +1,41 @@
+# Dependencies
 node_modules/
+
+# TurboRepo cache (should NOT be committed)
+.turbo/
+
+# Build outputs
+dist/
+.next/
+out/
+
+# Database files
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Master key file (NEVER commit this!)
+.master.key
+
+# Environment variables
+.env
+.env.local
+.env*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
