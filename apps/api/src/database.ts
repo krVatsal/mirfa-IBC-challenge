@@ -327,11 +327,6 @@ class SQLiteAdapter implements DatabaseAdapter {
 let dbAdapter: DatabaseAdapter | null = null;
 
 
-// ============================================
-// Database Factory & Exports
-// ============================================
-let dbAdapter: DatabaseAdapter | null = null;
-
 async function getAdapter(): Promise<DatabaseAdapter> {
   if (!dbAdapter) {
     if (USE_POSTGRES) {
