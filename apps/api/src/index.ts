@@ -21,10 +21,12 @@ const fastify = Fastify({
 
 // Enable CORS for frontend
 fastify.register(cors, {
-  origin: process.env.CORS_ORIGIN || true, // Allow all origins or specify in env
+  origin: process.env.CORS_ORIGIN || true, // Allow all origins in dev, specify in production
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'X-Request-Id'],
+  maxAge: 86400, // 24 hours
 });
 
 // Health check
@@ -32,7 +34,7 @@ fastify.get("/", async () => {
   return { 
     status: "ok", 
     service: "mirfa-ibc-api",
-    storage: "SQLite",
+    storage: process.env.DATABASE_URL ? "PostgreSQL (Neon)" : "SQLite",
     encryption: "AES-256-GCM Envelope Encryption"
   };
 });
