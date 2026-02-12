@@ -1,0 +1,39 @@
+PRESENTATION SCRIPT: SECURE TRANSACTION SERVICE (3 MINUTES)
+
+---
+
+I. INTRODUCTION & PROJECT OVERVIEW (0:00 - 0:30)
+- "Hey everyone! Today I'm presenting the Secure Transaction Service I built for the IBC challenge."
+- "The core goal was to build a system that doesn't just store data, but ensures that even if the database is compromised, the transaction details remain completely unreadable."
+- "Technically, it's a monorepo powered by TurboRepo, with a Next.js frontend and a Fastify backend. I chose this stack for speed and type-safety across the whole pipeline."
+
+II. ARCHITECTURE WALKTHROUGH (EXCALIDRAW) (0:30 - 1:15)
+- [Action: Refer to the Architecture Diagram]
+- "If we look at the architecture, you'll see a clean separation of concerns."
+- "We have the Frontend (Next.js) which handles the user interaction and provides a smooth dashboard."
+- "The Backend (Fastify) acts as the orchestrator. But the 'brain' of the operation is actually a shared internal package called '@repo/crypto'."
+- "This shared package is where the encryption logic lives, making it reusable and easy to test in isolation."
+- "You'll also notice a Database Adapter. This allows the system to flip-flop between local storage (SQLite) and production storage (Neon PostgreSQL) without changing a single line of business logic."
+
+III. ENVELOPE ENCRYPTION LOGIC (1:15 - 2:00)
+- "Now, let’s talk about the 'Secret Sauce': Envelope Encryption using AES-256-GCM."
+- "We don't just use one key for everything. We use a strategy called Envelope Encryption."
+- "For every single transaction, the system generates a unique Data Encryption Key (DEK). This DEK encrypts your payload."
+- "Then, we take that DEK and 'wrap' it (encrypt it) using a Master Key (MK) that only the server knows."
+- "The result? We store the encrypted payload AND the encrypted DEK. To get the data back, you have to unwrap the DEK first. This provides an extra layer of security and makes key rotation much easier."
+
+IV. SECURITY & DATABASE PERSISTENCE (2:00 - 2:30)
+- "A major challenge with encryption is key persistence. If you lose the Master Key, you lose the data."
+- "I implemented a robust persistence layer: 
+    - In local development, the Master Key is saved to a hidden file so it survives restarts.
+    - In production (Vercel), it's pulled from a secure Environment Variable."
+- "On the database side, I built a custom adapter. 
+    - For local dev, it uses 'sql.js'—a WASM-based SQLite engine that’s incredibly fast. 
+    - For production, it switches to a Neon PostgreSQL instance. The transition is seamless based on the environment."
+
+V. DEMO & CLOSING (2:30 - 3:00)
+- "Finally, let's look at the demo."
+- "You enter a JSON payload—maybe it's a payment or a sensitive trade—and a Party ID."
+- "The moment you hit 'Encrypt', the backend performs that GCM handshake, wraps the key, and saves it."
+- "You can then instantly retrieve it, see the encrypted 'gibberish' in the records, and then hit 'Decrypt' to see the original JSON pop back into existence."
+- "It’s a production-ready approach to transaction security. Thanks for listening!"

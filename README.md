@@ -55,6 +55,17 @@ pnpm build
 pnpm start
 ```
 
+### Run Tests
+
+```bash
+# Run all tests
+cd packages/crypto
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+```
+
 ## 📦 Packages
 
 ### `@mirfa/crypto`
@@ -71,6 +82,23 @@ Shared encryption package implementing envelope encryption.
 2. Encrypt payload using DEK (AES-256-GCM)
 3. Wrap DEK using Master Key (AES-256-GCM)
 4. Store everything as hex strings
+
+**Test Suite:**
+- 10 comprehensive tests using Vitest
+- ✅ Encrypt/decrypt roundtrip
+- ✅ Tampered ciphertext detection
+- ✅ Tampered authentication tag detection
+- ✅ Wrong nonce length validation
+- ✅ Tampered DEK wrapper detection
+- ✅ Invalid hex validation
+- ✅ Unique nonce generation
+- ✅ Edge cases (empty payload, nested objects)
+
+Run tests:
+```bash
+cd packages/crypto
+pnpm test
+```
 
 ### `@mirfa/api`
 
@@ -283,6 +311,7 @@ This project fulfills all requirements:
 - ✅ Proper validation rules
 - ✅ TypeScript throughout
 - ✅ Runs with `pnpm install && pnpm dev`
+- ✅ **Comprehensive test suite** (10 tests, all passing)
 - ✅ **SQLite persistent storage** (bonus)
 - ✅ Clean, modern UI
 - ✅ Full error handling

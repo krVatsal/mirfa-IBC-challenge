@@ -166,7 +166,7 @@ fastify.post<{
       message: error instanceof Error ? error.message : "Unknown error",
     });
   }
-});
+}); 
 
 // Start server
 const start = async () => {
